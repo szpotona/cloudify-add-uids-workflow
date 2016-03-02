@@ -1,0 +1,11 @@
+tosca_definitions_version: cloudify_dsl_1_2
+
+plugins:
+  add_uids_plugin:
+    executor: central_deployment_agent
+    source: add_uids_plugin
+
+
+workflows:
+  add_uids:
+    mapping: add_uids_plugin.custom.workflows.run

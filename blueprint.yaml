@@ -1,0 +1,71 @@
+tosca_definitions_version: cloudify_dsl_1_2
+
+imports:
+    - http://www.getcloudify.org/spec/cloudify/3.3.1/types.yaml
+    - https://raw.githubusercontent.com/cloudify-cosmo/cloudify-gcp-plugin/b3.3.1-0/plugin.yaml
+    - plugins/add_uids_plugin/plugin.yaml
+
+inputs:
+  use_existing_static_ip:
+    default: true
+
+  image_id:
+    default: projects/centos-cloud/global/images/centos-7-v20150818
+
+  instance_type:
+    default: n1-standard-4
+
+  config:
+    default:
+      auth: test
+      project: test
+      zone: us-central1-f
+      network: cloudify
+
+node_types:
+    compute:
+      derived_from: cloudify.gcp.nodes.Instance
+      properties:
+        type:
+          default: test
+
+node_templates:
+
+  container:
+    type: cloudify.nodes.Root
+    instances:
+      deploy: 2
+
+  test_node:
+    type: compute
+    properties:
+      image_id: { get_input: image_id }
+      instance_type: { get_input: instance_type }
+      gcp_config: { get_input: config }
+      install_agent: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        start:
+          implementation: gcp_plugin.gcp.compute.instance.create
+          inputs:
+            name:
+              default: { get_attribute: [SELF, id] }
+            startup_script:
+              default:
+                type: string
+                script: { get_attribute: [SELF, script] }
+            external_ip:
+              default: false
+            instance_type:
+              default: { get_property: [SELF, instance_type]}
+            image_id:
+              default: { get_property: [SELF, image_id]}
+            zone:
+              default: { get_property: [SELF, zone]}
+            scopes:
+              default: ''
+            tags:
+              default: { get_property: [SELF, tags]}
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: container
